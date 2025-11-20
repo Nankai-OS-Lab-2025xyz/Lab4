@@ -9,9 +9,10 @@
 #include <stdio.h>
 #include <trap.h>
 #include <vmm.h>
+#include <sbi.h>
 
 #define TICK_NUM 100
-
+static volatile int num = 0;   /* 记录已经打印了多少次 "100 ticks" */
 static void print_ticks()
 {
     cprintf("%d ticks\n", TICK_NUM);
@@ -111,6 +112,16 @@ void interrupt_handler(struct trapframe *tf)
         // clear_csr(sip, SIP_STIP);
 
         /*LAB3 请补充你在lab3中的代码 */ 
+        clock_set_next_event();//又调用 sbi_set_timer 预约了下一次 10ms 后的中断。
+            ticks+=1;
+            if(ticks%TICK_NUM==0){
+                num+=1;
+                print_ticks();
+                if(num==10){
+                    sbi_shutdown();
+                }
+            }
+        //C 函数逐级返回，回到 trapentry.S的中断处理代码后继续执行
         break;
     case IRQ_H_TIMER:
         cprintf("Hypervisor software interrupt\n");
